@@ -28,7 +28,7 @@ public class CarController : MonoBehaviour
 
     [SerializeField] private GameObject wallPrefab;
     [SerializeField] private GameObject wallCornerPrefab;
-    //[SerializeField] private Material wallRegularMat;
+    [SerializeField] private Material wallRegularMat;
 
     private float speed = 0f; // the current speed of the car (because it accelerates its not always maxSpeed)
     private float rotationSpeed = 0f; // same reason as above
@@ -268,13 +268,13 @@ public class CarController : MonoBehaviour
     {
         if (curWall != null)
         {
-            //curWall.GetComponent<MeshRenderer>().material = wallRegularMat;
+            curWall.GetComponent<MeshRenderer>().material = wallRegularMat;
             curWall.GetComponent<WallBuilder>().enabled = false;
             curWall.transform.parent = perimeter;
         }
         if (curWallCorner != null)
         {
-            //curWallCorner.GetComponent<MeshRenderer>().material = wallRegularMat;
+            curWallCorner.GetComponent<MeshRenderer>().material = wallRegularMat;
             curWallCorner.transform.parent = perimeter;
         }
         curWall = null;

@@ -811,8 +811,7 @@ MonoBehaviour:
   perimeter: {fileID: 2128190706}
   wallPrefab: {fileID: 8028285894101140603, guid: cb38a653685d2a742a155427f34587a3, type: 3}
   wallCornerPrefab: {fileID: 6850445842484341871, guid: 5343347527ce08a4b96a5f71ab91d38b, type: 3}
-  speed: 0
-  rotationSpeed: 0
+  wallRegularMat: {fileID: 2100000, guid: 1861b96cce01d344bad1f4a885ca5703, type: 2}
 --- !u!65 &686535867
 BoxCollider:
   m_ObjectHideFlags: 0
