@@ -28,6 +28,7 @@ public class CarController : MonoBehaviour
 
     [SerializeField] private GameObject wallPrefab;
     [SerializeField] private GameObject wallCornerPrefab;
+    [SerializeField] private Material wallTranslucentMat;
     [SerializeField] private Material wallRegularMat;
 
     private float speed = 0f; // the current speed of the car (because it accelerates its not always maxSpeed)
@@ -59,6 +60,20 @@ public class CarController : MonoBehaviour
     {
         wallStart = GameObject.FindWithTag("WallStart").transform;
         targetObj.SetActive(false);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (IsRecordingPerimeter) return;
+
+        other.gameObject.GetComponent<MeshRenderer>().material = wallTranslucentMat;
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (IsRecordingPerimeter) return;
+
+        other.gameObject.GetComponent<MeshRenderer>().material = wallRegularMat;
     }
 
     private void Update()
@@ -258,9 +273,9 @@ public class CarController : MonoBehaviour
         {
             curWall.GetComponent<WallBuilder>().ForceWallEndPosition(GameObject.FindWithTag("WallStart").transform.position);
 
-            isBuildingClosingWall = false;
             SetRecordUIInteractable(true);
             StopRecording(true);
+            isBuildingClosingWall = false;
         }
     }
 
@@ -268,7 +283,7 @@ public class CarController : MonoBehaviour
     {
         if (curWall != null)
         {
-            curWall.GetComponent<MeshRenderer>().material = wallRegularMat;
+            if (!isBuildingClosingWall) curWall.GetComponent<MeshRenderer>().material = wallRegularMat;
             curWall.GetComponent<WallBuilder>().enabled = false;
             curWall.transform.parent = perimeter;
         }

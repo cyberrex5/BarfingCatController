@@ -784,7 +784,7 @@ GameObject:
   - component: {fileID: 686535868}
   - component: {fileID: 686535867}
   - component: {fileID: 686535866}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Car
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -811,6 +811,7 @@ MonoBehaviour:
   perimeter: {fileID: 2128190706}
   wallPrefab: {fileID: 8028285894101140603, guid: cb38a653685d2a742a155427f34587a3, type: 3}
   wallCornerPrefab: {fileID: 6850445842484341871, guid: 5343347527ce08a4b96a5f71ab91d38b, type: 3}
+  wallTranslucentMat: {fileID: 2100000, guid: 309c7bd2654608048bf6093f2ce63f6d, type: 2}
   wallRegularMat: {fileID: 2100000, guid: 1861b96cce01d344bad1f4a885ca5703, type: 2}
 --- !u!65 &686535867
 BoxCollider:
@@ -820,7 +821,7 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 686535865}
   m_Material: {fileID: 0}
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
