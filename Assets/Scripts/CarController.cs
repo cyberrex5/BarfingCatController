@@ -30,10 +30,8 @@ public class CarController : MonoBehaviour
     [SerializeField] private GameObject wallCornerPrefab;
     //[SerializeField] private Material wallRegularMat;
 
-    [Space]
-    [Header("Don't set these")]
-    [SerializeField] private float speed = 0f;
-    [SerializeField] private float rotationSpeed = 0f;
+    private float speed = 0f; // the current speed of the car (because it accelerates its not always maxSpeed)
+    private float rotationSpeed = 0f; // same reason as above
 
     private Vector3 direction;
     private Vector3 rotation;
@@ -258,8 +256,9 @@ public class CarController : MonoBehaviour
 
         if (isBuildingClosingWall)
         {
-            isBuildingClosingWall = false;
+            curWall.GetComponent<WallBuilder>().ForceWallEndPosition(GameObject.FindWithTag("WallStart").transform.position);
 
+            isBuildingClosingWall = false;
             SetRecordUIInteractable(true);
             StopRecording(true);
         }
@@ -284,8 +283,16 @@ public class CarController : MonoBehaviour
 
     public void StopRecording(bool skipDistCheck = false)
     {
+        if (skipDistCheck)
+        {
+            EndCurWallBuild();
+
+            IsRecordingPerimeter = false;
+            return;
+        }
+
         float cornerRadius = (wallCornerPrefab.transform.localScale.x / 2) - 0.01f;
-        if (!skipDistCheck && ((wallStart.position - buildStartPos).sqrMagnitude > cornerRadius * cornerRadius))
+        if ((wallStart.position - buildStartPos).sqrMagnitude > cornerRadius * cornerRadius)
         {
             if (wallStart.localPosition.z == 0)
             {
@@ -298,10 +305,7 @@ public class CarController : MonoBehaviour
             isBuildingClosingWall = true;
             SetRecordUIInteractable(false);
         }
-        else
-        {
-            EndCurWallBuild();
-        }
+
         IsRecordingPerimeter = false;
     }
 

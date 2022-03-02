@@ -14,6 +14,17 @@ public class WallBuilder : MonoBehaviour
 
     private void Update()
     {
+        UpdateWall();
+    }
+
+    public void ForceWallEndPosition(Vector3 endPos)
+    {
+        wallEnd.position = endPos;
+        UpdateWall();
+    }
+
+    private void UpdateWall()
+    {
         transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, (wallEnd.position - wallStart).magnitude);
         transform.position = (wallEnd.position + wallStart) / 2;
         transform.Rotate(new Vector3(0f, Vector3.SignedAngle(transform.forward, wallEnd.position - transform.position, Vector3.up), 0f));
