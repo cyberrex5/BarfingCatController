@@ -333,7 +333,7 @@ public class CarController : MonoBehaviour
 
     private void SetRecordUIInteractable(bool val)
     {
-        GameObject.FindWithTag("AutoCloseToggle").GetComponent<UnityEngine.UI.Toggle>().interactable = val;
+        UIManager.AutoCloseToggle.GetComponent<UnityEngine.UI.Toggle>().interactable = val;
 
         GameObject recordButton = GameObject.FindWithTag("RecordButton");
 

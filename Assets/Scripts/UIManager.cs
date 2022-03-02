@@ -3,6 +3,9 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
+    public static GameObject MovementButtons { get; private set; }
+    public static GameObject AutoCloseToggle { get; private set; }
+
     public static bool IsUpPressed { get; private set; }
     public static bool IsDownPressed { get; private set; }
     public static bool IsLeftPressed { get; private set; }
@@ -15,12 +18,12 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private CarController carScript;
 
-    private GameObject movementButtons;
-
     private void Awake()
     {
-        movementButtons = GameObject.FindWithTag("MovementButtons");
-        movementButtons.SetActive(false);
+        MovementButtons = GameObject.FindWithTag("MovementButtons");
+        MovementButtons.SetActive(false);
+        AutoCloseToggle = GameObject.FindWithTag("AutoCloseToggle");
+        AutoCloseToggle.SetActive(false);
         GameObject.FindWithTag("RecordButton").GetComponent<Button>().onClick.AddListener(OnRecordClick);
         GameObject.FindWithTag("ResetButton").GetComponent<Button>().onClick.AddListener(OnResetClick);
     }
@@ -29,13 +32,15 @@ public class UIManager : MonoBehaviour
     {
         if (carScript.IsRecordingPerimeter)
         {
-            movementButtons.SetActive(false);
-            carScript.StopRecording(!GameObject.FindWithTag("AutoCloseToggle").GetComponent<Toggle>().isOn);
+            MovementButtons.SetActive(false);
+            carScript.StopRecording(!AutoCloseToggle.GetComponent<Toggle>().isOn);
+            AutoCloseToggle.SetActive(false);
             stopImage.enabled = false;
             return;
         }
 
-        movementButtons.SetActive(true);
+        MovementButtons.SetActive(true);
+        AutoCloseToggle.SetActive(true);
         carScript.StartRecording();
         stopImage.enabled = true;
     }
