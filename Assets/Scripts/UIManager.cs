@@ -26,6 +26,12 @@ public class UIManager : MonoBehaviour
         AutoCloseToggle.SetActive(false);
         GameObject.FindWithTag("RecordButton").GetComponent<Button>().onClick.AddListener(OnRecordClick);
         GameObject.FindWithTag("ResetButton").GetComponent<Button>().onClick.AddListener(OnResetClick);
+
+#if !UNITY_EDITOR
+        AndroidBluetooth.BluetoothService.CreateBluetoothObject();
+        ArduinoController.Connect();
+#endif
+        GameObject.FindWithTag("ConnectingPanel").SetActive(false);
     }
 
     private void OnRecordClick()

@@ -9,6 +9,7 @@ TagManager:
   - MovementButtons
   - WallStart
   - AutoCloseToggle
+  - ConnectingPanel
   layers:
   - Default
   - TransparentFX
