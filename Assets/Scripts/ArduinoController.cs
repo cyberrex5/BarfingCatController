@@ -2,25 +2,26 @@ using AndroidBluetooth;
 
 public static class ArduinoController
 {
+    public static bool IsConnected { get; private set; } = false;
     private const string BTAdapterName = "HC-02";
-    private static bool _isConnected = false;
 
     private static bool isMoving = false;
     private static bool isRotating = false;
 
     public static void Connect()
     {
-        if (_isConnected) return;
+        if (IsConnected) return;
         for (int i = 0; i < 10; ++i)
         {
-            _isConnected = BluetoothService.StartBluetoothConnection(BTAdapterName);
-            if (_isConnected) break;
+            IsConnected = BluetoothService.StartBluetoothConnection(BTAdapterName);
+            if (IsConnected) return;
         }
+        UnityEngine.Application.Quit(2);
     }
 
     private static void Write(string data)
     {
-        if (_isConnected && !string.IsNullOrWhiteSpace(data))
+        if (IsConnected)
         {
             BluetoothService.WritetoBluetooth(data);
         }

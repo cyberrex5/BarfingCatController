@@ -27,11 +27,27 @@ public class UIManager : MonoBehaviour
         GameObject.FindWithTag("RecordButton").GetComponent<Button>().onClick.AddListener(OnRecordClick);
         GameObject.FindWithTag("ResetButton").GetComponent<Button>().onClick.AddListener(OnResetClick);
 
-#if !UNITY_EDITOR
-        AndroidBluetooth.BluetoothService.CreateBluetoothObject();
-        ArduinoController.Connect();
-#endif
-        GameObject.FindWithTag("ConnectingPanel").SetActive(false);
+        if (ArduinoController.IsConnected)
+        {
+            GameObject.FindWithTag("ConnectingPanel").SetActive(false);
+            return;
+        }
+
+        GameObject.FindWithTag("ConnectButton").GetComponent<Button>().onClick.AddListener(() =>
+        {
+            GameObject.FindWithTag("ConnectButton").GetComponent<Button>().interactable = false;
+            GameObject.FindWithTag("SandboxButton").GetComponent<Button>().interactable = false;
+
+            AndroidBluetooth.BluetoothService.CreateBluetoothObject();
+            ArduinoController.Connect();
+
+            GameObject.FindWithTag("ConnectingPanel").SetActive(false);
+        });
+
+        GameObject.FindWithTag("SandboxButton").GetComponent<Button>().onClick.AddListener(() =>
+        {
+            GameObject.FindWithTag("ConnectingPanel").SetActive(false);
+        });
     }
 
     private void OnRecordClick()

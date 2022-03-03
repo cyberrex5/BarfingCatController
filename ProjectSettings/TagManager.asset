@@ -10,6 +10,8 @@ TagManager:
   - WallStart
   - AutoCloseToggle
   - ConnectingPanel
+  - ConnectButton
+  - SandboxButton
   layers:
   - Default
   - TransparentFX
