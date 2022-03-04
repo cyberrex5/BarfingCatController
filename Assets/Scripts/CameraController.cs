@@ -2,12 +2,17 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
+    private static readonly float ZoomSpeedFactor = 0.3f * 1080f / Screen.height;
+
     public static bool WasControlling { get; private set; }
 
     private static bool camWasUpdated;
 
     private Camera cam;
     private Vector3 initialPos;
+
+    private bool canPan = false;
+    private bool isPanning = false;
 
     private void Awake()
     {
@@ -29,6 +34,8 @@ public class CameraController : MonoBehaviour
 
         if (Input.touchCount == 2)
         {
+            isPanning = false;
+
             Touch touch1 = Input.GetTouch(0);
             Touch touch2 = Input.GetTouch(1);
 
@@ -38,14 +45,16 @@ public class CameraController : MonoBehaviour
             float delta = Vector2.Distance(touch1.position, touch2.position) - Vector2.Distance(touch1InitialPos, touch2InitialPos);
 
             float curFov = cam.fieldOfView;
-            float newFov = Mathf.Clamp(curFov - (delta * 0.1f), 1f, 170f);
+            float newFov = Mathf.Clamp(curFov - (delta * (curFov / 180f) * ZoomSpeedFactor), 1f, 170f);
 
             camWasUpdated = curFov != newFov;
 
             cam.fieldOfView = newFov;
         }
-        else
+        else if (canPan || isPanning)
         {
+            isPanning = true;
+
             Vector3 newPos = transform.position;
             if (Input.GetMouseButtonDown(0))
             {
@@ -60,6 +69,8 @@ public class CameraController : MonoBehaviour
 
             transform.position = newPos;
         }
+
+        canPan = Input.touchCount == 0;
 
         if (camWasUpdated)
         {
