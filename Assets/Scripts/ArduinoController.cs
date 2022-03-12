@@ -1,3 +1,5 @@
+//#define LOG_ARDUINO
+
 using AndroidBluetooth;
 
 public static class ArduinoController
@@ -28,7 +30,7 @@ public static class ArduinoController
     {
         if (isRotating) return;
 
-        //UnityEngine.Debug.Log("Arduino car rotating left");
+        ConditionalLog("Arduino car rotating left");
         Write("a");
 
         isRotating = true;
@@ -38,7 +40,7 @@ public static class ArduinoController
     {
         if (isRotating) return;
 
-        //UnityEngine.Debug.Log("Arduino car rotating right");
+        ConditionalLog("Arduino car rotating right");
         Write("d");
 
         isRotating = true;
@@ -48,7 +50,7 @@ public static class ArduinoController
     {
         if (!isRotating) return;
 
-        //UnityEngine.Debug.Log("Arduino car stopped rotating");
+        ConditionalLog("Arduino car stopped rotating");
         Write("f");
 
         isRotating = false;
@@ -58,7 +60,7 @@ public static class ArduinoController
     {
         if (isMoving) return;
 
-        //UnityEngine.Debug.Log("Arduino car moving forward");
+        ConditionalLog("Arduino car moving forward");
         Write("w");
 
         isMoving = true;
@@ -68,7 +70,7 @@ public static class ArduinoController
     {
         if (isMoving) return;
 
-        //UnityEngine.Debug.Log("Arduino car moving backward");
+        ConditionalLog("Arduino car moving backward");
         Write("s");
 
         isMoving = true;
@@ -78,9 +80,17 @@ public static class ArduinoController
     {
         if (!isMoving) return;
 
-        //UnityEngine.Debug.Log("Arduino car stopped moving");
+        ConditionalLog("Arduino car stopped moving");
         Write("f");
 
         isMoving = false;
+    }
+
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    public static void ConditionalLog(object message)
+    {
+#if LOG_ARDUINO
+        UnityEngine.Debug.Log(message);
+#endif
     }
 }

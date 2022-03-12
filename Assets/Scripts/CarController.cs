@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CarController : MonoBehaviour
 {
-    [HideInInspector] public bool IsRecordingPerimeter = false;
+    public bool IsRecordingPerimeter { get; private set; } = false;
 
     [Tooltip("Max car speed (m/sec)")]
     [Range(0, 5)]
@@ -100,7 +100,7 @@ public class CarController : MonoBehaviour
                 direction = Vector3.forward;
                 CheckIfAtTarget();
             }
-            else if (rotToTargetDir == CarRotDirection.Right || rotToTargetDir == CarRotDirection.Left)
+            else if (rotToTargetDir != CarRotDirection.None)
             {
                 rotation.y = (float)rotToTargetDir;
             }
@@ -204,18 +204,19 @@ public class CarController : MonoBehaviour
         targetObj.SetActive(true);
 
         targetPos = point;
-        targetRot = Quaternion.LookRotation(point - transform.position);
+        targetRot = Quaternion.LookRotation(point - transform.position, Vector3.up);
 
         // Calculate the degree delta to rotate,
         // and set rotation direction to left or right depending on which is shorter
-        float degree = (targetRot.eulerAngles.y - transform.rotation.eulerAngles.y);
-        if (degree < 0)
+        float degreeDeltaToRot = (targetRot.eulerAngles.y - transform.rotation.eulerAngles.y);
+        if (degreeDeltaToRot < 0)
         {
-            degree = (360 - transform.rotation.eulerAngles.y) + targetRot.eulerAngles.y;
+            degreeDeltaToRot = 360 - transform.rotation.eulerAngles.y + targetRot.eulerAngles.y;
         }
-        if (degree > 180)
+
+        if (degreeDeltaToRot > 180)
         {
-            degree = 360 - degree;
+            degreeDeltaToRot = 360 - degreeDeltaToRot;
             rotToTargetDir = CarRotDirection.Left;
         }
         else
@@ -226,9 +227,9 @@ public class CarController : MonoBehaviour
         float maxRotSpeedAmount = 0.5f * WheelTimeToMax * MaxRotationSpeed; // the rotation in degrees until reaching max speed.
         Invoke(nameof(StopRotatingAndStartMovingToTarget),
                // time to rotate `degree`:
-               degree < maxRotSpeedAmount
-               ? Mathf.Sqrt(2 * degree * WheelTimeToMax / MaxRotationSpeed)
-               : ((degree - maxRotSpeedAmount) / MaxRotationSpeed) + WheelTimeToMax);
+               degreeDeltaToRot < maxRotSpeedAmount
+               ? Mathf.Sqrt(2 * degreeDeltaToRot * WheelTimeToMax / MaxRotationSpeed)
+               : ((degreeDeltaToRot - maxRotSpeedAmount) / MaxRotationSpeed) + WheelTimeToMax);
     }
 
     private void StopRotatingAndStartMovingToTarget()
@@ -237,15 +238,6 @@ public class CarController : MonoBehaviour
         transform.rotation = targetRot;
 
         isMovingToTarget = true;
-
-        //float dist = (targetPos - transform.position).magnitude;
-
-        //float maxSpeedDist = 0.5f * WheelTimeToMax * maxSpeed; // the distance that would be crossed until reaching max speed.
-        //Invoke(nameof(StopMovingToTarget),
-        //       // time to cross `dist`:
-        //       dist < maxSpeedDist
-        //       ? Mathf.Sqrt(2 * dist * WheelTimeToMax / maxSpeed)
-        //       : ((dist - maxSpeedDist) / maxSpeed) + WheelTimeToMax);
     }
 
     private void CheckIfAtTarget()
