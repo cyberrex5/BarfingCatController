@@ -18,6 +18,7 @@ public class CarController : MonoBehaviour
 
     [Space]
     [Tooltip("The GameObject that should appear at the point the car is (automatically) moving to.")]
+    [SerializeField] private GameObject inputTargetObj;
     [SerializeField] private GameObject targetObj;
 
     [Tooltip("The perimeter empty gameObject's transform that should be the parent of all walls and corners.")]
@@ -31,11 +32,12 @@ public class CarController : MonoBehaviour
     [SerializeField] private Material wallTranslucentMat;
     [SerializeField] private Material wallRegularMat;
 
+    [Space]
+    [SerializeField] private GameObject obstaclePrefab;
+
     private float speed = 0f; // the current speed of the car (because it accelerates its not always maxSpeed)
     private float rotationSpeed = 0f; // same reason as above
 
-    private Vector3 direction;
-    private Vector3 rotation;
     private bool wasRotating = true;
 
     private GameObject curWall; // the wall that is currently being "built".
@@ -44,10 +46,23 @@ public class CarController : MonoBehaviour
     private Vector3 buildStartPos; // the position from which to start building the wall (set on record start).
     private bool isBuildingClosingWall = false; // true while the final wall to close the perimeter is being built (automatically).
 
-    private Vector3 targetPos; // the target position the car should be (automatically) moving to.
+    private Vector3 targetPos; // the position that the car is currently going to
     private Quaternion targetRot; // the target rotation (so the car is looking towards targetPos) before starting to move.
     private CarRotDirection rotToTargetDir = CarRotDirection.None;
     private bool isMovingToTarget = false;
+
+#if UNITY_EDITOR
+    [SerializeField]
+#endif
+    private bool obstacleDetected = false;
+    private bool isMovingAroundObstacle = false;
+    private int obstAvoidanceStep = -1;
+    private Transform obstacleStart;
+    private GameObject curObstacle = null;
+
+    private Vector3 inputtedPos; // the position that was inputted by the user (this will not be the same as the current target position when moving around an obstacle)
+
+    private const float ultrasonicOffsetFromCenter = 0.8f;
 
     private enum CarRotDirection
     {
@@ -59,7 +74,14 @@ public class CarController : MonoBehaviour
     private void Awake()
     {
         wallStart = GameObject.FindWithTag("WallStart").transform;
+        obstacleStart = GameObject.FindWithTag("ObstacleEnd").transform;
+        inputTargetObj.SetActive(false);
         targetObj.SetActive(false);
+    }
+
+    private void Start()
+    {
+        GameObject.FindWithTag(ArduinoController.BTObjTag).GetComponent<ArduinoController>().OnBTMessageRecieved = OnBTMsgRecieved;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -78,48 +100,170 @@ public class CarController : MonoBehaviour
 
     private void Update()
     {
-        direction = Vector3.zero;
-        rotation = Vector3.zero;
+        Vector3 direction = Vector3.zero;
+        Vector3 rotation = Vector3.zero;
 
         if (IsRecordingPerimeter)
         {
-            if (UIManager.IsUpPressed) direction += Vector3.forward;
-            if (UIManager.IsDownPressed) direction += Vector3.back;
+            GetMovementFromUI(ref direction, ref rotation);
+            RecordPerimeter(rotation.y);
 
-            if (UIManager.IsLeftPressed) --rotation.y;
-            if (UIManager.IsRightPressed) ++rotation.y;
+            Move(ref direction, ref rotation);
 
-            if (direction != Vector3.zero) rotation = Vector3.zero;
-
-            RecordPerimeter();
+            return;
         }
-        else
+
+        if (ShouldSetTargetPoint())
         {
-            if (isMovingToTarget)
+            Vector3 mouseWorldPos = Utilities.GetPosInWorld(Input.mousePosition, transform.position.y);
+            if (IsPointInsidePerimeter(mouseWorldPos))
+            {
+                inputtedPos = mouseWorldPos;
+                StartGoingToPoint(inputtedPos);
+            }
+        }
+
+        if (isMovingToTarget)
+        {
+            if (IsAtTargetPos())
+            {
+                StopMovingToTarget();
+
+                if (isMovingAroundObstacle)
+                {
+                    SetNextObstacleMovStep();
+                }
+            }
+            else if (isMovingAroundObstacle)
+            {
+                bool isMovingAlongObstacleSide = obstAvoidanceStep == 0 || obstAvoidanceStep == 3;
+
+                if (!obstacleDetected && isMovingAlongObstacleSide)
+                {
+                    // move away slightly from obstacle so that when rotating and moving along the next side, we dont hit the obstacle
+                    MoveAwayFromObstacle();
+                }
+                else
+                {
+                    if (isMovingAlongObstacleSide)
+                    {
+                        UpdateObstacleGameObj();
+                    }
+
+                    direction = Vector3.forward;
+                }
+            }
+            else if (obstacleDetected)
+            {
+                isMovingAroundObstacle = true;
+                obstAvoidanceStep = 0;
+
+                CreateObstacleGameObj();
+
+                StartGoingToPoint(transform.position + (1000f * transform.right), false);
+            }
+            else
             {
                 direction = Vector3.forward;
-                CheckIfAtTarget();
             }
-            else if (rotToTargetDir != CarRotDirection.None)
+        }
+        else if (rotToTargetDir != CarRotDirection.None) // if rotating to target
+        {
+            if (HasReachedTargetRot())
+            {
+                StopRotatingAndStartMovingToTarget();
+            }
+            else
             {
                 rotation.y = (float)rotToTargetDir;
             }
-            else if (!isBuildingClosingWall && !Utilities.IsTouchingUI() && !CameraController.WasControlling && Input.GetMouseButtonUp(0))
-            {
-                Vector3 mouseWorldPos = Utilities.GetPosInWorld(Input.mousePosition, transform.position.y);
-                if (IsPointInsidePerimeter(mouseWorldPos)) StartGoingToPoint(mouseWorldPos);
-            }
-
-            if (isBuildingClosingWall) RecordPerimeter();
         }
 
-        Move();
-        wasRotating = (rotation.y != 0);
+        if (isBuildingClosingWall)
+        {
+            RecordPerimeter(rotation.y);
+        }
+
+        Move(ref direction, ref rotation);
     }
 
-    private void RecordPerimeter()
+    private void OnBTMsgRecieved(ArduinoMessage msg)
     {
-        if (rotation.y == 0 && wasRotating)
+        if (msg == ArduinoMessage.ObstacleDetected)
+        {
+            obstacleDetected = true;
+        }
+        else if (msg == ArduinoMessage.NoObstacle)
+        {
+            obstacleDetected = false;
+        }
+    }
+
+    private void GetMovementFromUI(ref Vector3 dir, ref Vector3 rot)
+    {
+        if (UIManager.IsUpPressed) dir += Vector3.forward;
+        if (UIManager.IsDownPressed) dir += Vector3.back;
+
+        if (UIManager.IsLeftPressed) --rot.y;
+        if (UIManager.IsRightPressed) ++rot.y;
+
+        if (dir != Vector3.zero) rot = Vector3.zero;
+    }
+
+    private bool ShouldSetTargetPoint()
+    {
+        return !isBuildingClosingWall && !Utilities.IsTouchingUI() && !CameraController.WasControlling && Input.GetMouseButtonUp(0);
+    }
+
+    private void SetNextObstacleMovStep()
+    {
+        switch (obstAvoidanceStep)
+        {
+            case 1:
+                obstAvoidanceStep = 2;
+                StartGoingToPoint(transform.position + (ArduinoController.MinObjectDist * -1f * transform.right), false);
+                return;
+
+            case 2:
+                obstAvoidanceStep = 3;
+                curObstacle.GetComponent<WallBuilder>().SwitchWallSides();
+                StartGoingToPoint(transform.position + (1000f * transform.forward), false);
+                return;
+
+            case 4:
+                obstAvoidanceStep = -1;
+                isMovingAroundObstacle = false;
+                curObstacle.GetComponent<WallBuilder>().enabled = false;
+                curObstacle = null;
+                StartGoingToPoint(inputtedPos, false);
+                return;
+        }
+    }
+
+    private void CreateObstacleGameObj()
+    {
+        Vector3 obstacleStartPos = transform.position + (ArduinoController.MinObjectDist * transform.forward) + (-0.5f * transform.right);
+        Quaternion obstacleRot = Quaternion.LookRotation(0.5f * transform.right, Vector3.up);
+        obstacleStart.position = obstacleStartPos;
+        curObstacle = Instantiate(obstaclePrefab, obstacleStartPos, obstacleRot);
+    }
+
+    private void UpdateObstacleGameObj()
+    {
+        obstacleStart.position = transform.position
+            + (ultrasonicOffsetFromCenter * transform.forward)
+            + ((ArduinoController.MinObjectDist + (obstAvoidanceStep == 3 ? (curObstacle.transform.localScale.x * 0.5f) : 0)) * -1f * transform.right);
+    }
+
+    private void MoveAwayFromObstacle()
+    {
+        StartGoingToPoint(transform.position + ((ArduinoController.MinObjectDist + ultrasonicOffsetFromCenter) * transform.forward), false);
+        ++obstAvoidanceStep;
+    }
+
+    private void RecordPerimeter(float curYRot)
+    {
+        if (curYRot == 0 && wasRotating)
         {
             if (curWall != null)
             {
@@ -138,9 +282,9 @@ public class CarController : MonoBehaviour
         }
     }
 
-    private void Move()
+    private void Move(ref Vector3 dir, ref Vector3 rot)
     {
-        if (rotation == Vector3.zero)
+        if (rot == Vector3.zero)
         {
             ArduinoController.StopRotating();
 
@@ -150,7 +294,8 @@ public class CarController : MonoBehaviour
         {
             rotationSpeed = Mathf.Clamp(rotationSpeed + (Time.deltaTime * MaxRotationSpeed / WheelTimeToMax), 0f, MaxRotationSpeed);
         }
-        if (direction == Vector3.zero)
+
+        if (dir == Vector3.zero)
         {
             ArduinoController.StopMoving();
 
@@ -161,14 +306,16 @@ public class CarController : MonoBehaviour
             speed = Mathf.Clamp(speed + (Time.deltaTime * maxSpeed / WheelTimeToMax), 0f, maxSpeed);
         }
 
-        if (rotation.y == -1) ArduinoController.RotateLeft();
-        else if (rotation.y == 1) ArduinoController.RotateRight();
+        if (rot.y == -1) ArduinoController.RotateLeft();
+        else if (rot.y == 1) ArduinoController.RotateRight();
 
-        if (direction == Vector3.forward) ArduinoController.MoveForward();
-        else if (direction == Vector3.back) ArduinoController.MoveBackward();
+        if (dir == Vector3.forward) ArduinoController.MoveForward();
+        else if (dir == Vector3.back) ArduinoController.MoveBackward();
 
-        transform.Translate(Time.deltaTime * speed * direction);
-        transform.Rotate(Time.deltaTime * rotationSpeed * rotation);
+        transform.Translate(Time.deltaTime * speed * dir);
+        transform.Rotate(Time.deltaTime * rotationSpeed * rot);
+
+        wasRotating = (rot.y != 0);
     }
 
     private bool IsPointInsidePerimeter(Vector3 point)
@@ -190,46 +337,75 @@ public class CarController : MonoBehaviour
         return isInsidePerimeter;
     }
 
-    private void StartGoingToPoint(Vector3 point)
+    private void StartGoingToPoint(Vector3 point, bool setInputTargetObj = true)
     {
         point.y = transform.position.y;
-        if (transform.position == point)
+        Vector3 carToPtVec = point - transform.position;
+
+        if (carToPtVec.magnitude < WheelTimeToMax * MaxSpeed * 0.5f)
         {
             isMovingToTarget = false;
             rotToTargetDir = CarRotDirection.None;
             return;
         }
 
-        targetObj.transform.position = point;
-        targetObj.SetActive(true);
+        if (isMovingToTarget)
+        {
+            isMovingToTarget = false;
+        }
+        else if (rotToTargetDir != CarRotDirection.None)
+        {
+            rotToTargetDir = CarRotDirection.None;
+        }
+
+        if (setInputTargetObj)
+        {
+            inputTargetObj.transform.position = point;
+            inputTargetObj.SetActive(true);
+        }
+        else
+        {
+            targetObj.transform.position = point;
+            targetObj.SetActive(true);
+        }
 
         targetPos = point;
-        targetRot = Quaternion.LookRotation(point - transform.position, Vector3.up);
+        targetRot = Quaternion.LookRotation(carToPtVec, Vector3.up);
 
         // Calculate the degree delta to rotate,
         // and set rotation direction to left or right depending on which is shorter
+        float degreeDeltaToRot = targetRot.eulerAngles.y - transform.rotation.eulerAngles.y;
+        if (degreeDeltaToRot < 0)
+        {
+            degreeDeltaToRot = 360 - transform.rotation.eulerAngles.y + targetRot.eulerAngles.y;
+        }
+
+        rotToTargetDir = degreeDeltaToRot > 180 ? CarRotDirection.Left : CarRotDirection.Right;
+
+        if (isMovingAroundObstacle)
+        {
+            ArduinoController.RotateServoLeft();
+        }
+        else
+        {
+            ArduinoController.RotateServoForward();
+        }
+    }
+
+    private bool HasReachedTargetRot()
+    {
         float degreeDeltaToRot = (targetRot.eulerAngles.y - transform.rotation.eulerAngles.y);
         if (degreeDeltaToRot < 0)
         {
             degreeDeltaToRot = 360 - transform.rotation.eulerAngles.y + targetRot.eulerAngles.y;
         }
 
-        if (degreeDeltaToRot > 180)
+        if (rotToTargetDir == CarRotDirection.Left)
         {
-            degreeDeltaToRot = 360 - degreeDeltaToRot;
-            rotToTargetDir = CarRotDirection.Left;
-        }
-        else
-        {
-            rotToTargetDir = CarRotDirection.Right;
+            return degreeDeltaToRot <= 180 && degreeDeltaToRot >= 0;
         }
 
-        float maxRotSpeedAmount = 0.5f * WheelTimeToMax * MaxRotationSpeed; // the rotation in degrees until reaching max speed.
-        Invoke(nameof(StopRotatingAndStartMovingToTarget),
-               // time to rotate `degree`:
-               degreeDeltaToRot < maxRotSpeedAmount
-               ? Mathf.Sqrt(2 * degreeDeltaToRot * WheelTimeToMax / MaxRotationSpeed)
-               : ((degreeDeltaToRot - maxRotSpeedAmount) / MaxRotationSpeed) + WheelTimeToMax);
+        return rotToTargetDir == CarRotDirection.Right && degreeDeltaToRot > 180;
     }
 
     private void StopRotatingAndStartMovingToTarget()
@@ -240,25 +416,22 @@ public class CarController : MonoBehaviour
         isMovingToTarget = true;
     }
 
-    private void CheckIfAtTarget()
+    private bool IsAtTargetPos()
     {
         if (transform.position == targetPos)
         {
-            StopMovingToTarget();
-            return;
+            return true;
         }
 
         float movDistSinceLastFrame = Time.deltaTime * speed;
-        if ((targetPos - transform.position).sqrMagnitude < movDistSinceLastFrame * movDistSinceLastFrame)
-        {
-            StopMovingToTarget();
-        }
+        return (targetPos - transform.position).sqrMagnitude < movDistSinceLastFrame * movDistSinceLastFrame;
     }
 
     private void StopMovingToTarget()
     {
         isMovingToTarget = false;
         transform.position = targetPos;
+        inputTargetObj.SetActive(false);
         targetObj.SetActive(false);
 
         if (isBuildingClosingWall)

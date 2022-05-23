@@ -12,6 +12,8 @@ TagManager:
   - ConnectingPanel
   - ConnectButton
   - SandboxButton
+  - BTObj
+  - ObstacleEnd
   layers:
   - Default
   - TransparentFX
