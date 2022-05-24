@@ -56,7 +56,7 @@ public class CarController : MonoBehaviour
 #endif
     private bool obstacleDetected = false;
     private bool isMovingAroundObstacle = false;
-    private int obstAvoidanceStep = -1;
+    private ObstAvoidanceStep obstAvoidanceStep = ObstAvoidanceStep.None;
     private Transform obstacleStart;
     private GameObject curObstacle = null;
 
@@ -69,6 +69,16 @@ public class CarController : MonoBehaviour
         None = 0,
         Right = 1,
         Left = -1,
+    }
+
+    private enum ObstAvoidanceStep
+    {
+        None = 0,
+        One,
+        Two,
+        Three,
+        Four,
+        Five,
     }
 
     private void Awake()
@@ -136,12 +146,12 @@ public class CarController : MonoBehaviour
             }
             else if (isMovingAroundObstacle)
             {
-                bool isMovingAlongObstacleSide = obstAvoidanceStep == 0 || obstAvoidanceStep == 3;
+                bool isMovingAlongObstacleSide = obstAvoidanceStep == ObstAvoidanceStep.One || obstAvoidanceStep == ObstAvoidanceStep.Four;
 
                 if (!obstacleDetected && isMovingAlongObstacleSide)
                 {
-                    // move away slightly from obstacle so that when rotating and moving along the next side, we dont hit the obstacle
-                    MoveAwayFromObstacle();
+                    // go to next step which will move away slightly from obstacle so that when rotating and moving along the next side, we dont hit the obstacle
+                    SetNextObstacleMovStep();
                 }
                 else
                 {
@@ -156,7 +166,7 @@ public class CarController : MonoBehaviour
             else if (obstacleDetected)
             {
                 isMovingAroundObstacle = true;
-                obstAvoidanceStep = 0;
+                obstAvoidanceStep = ObstAvoidanceStep.One;
 
                 CreateObstacleGameObj();
 
@@ -219,24 +229,39 @@ public class CarController : MonoBehaviour
     {
         switch (obstAvoidanceStep)
         {
-            case 1:
-                obstAvoidanceStep = 2;
+            case ObstAvoidanceStep.One:
+                obstAvoidanceStep = ObstAvoidanceStep.Two;
+                MoveAwayFromObstacle();
+                break;
+
+            case ObstAvoidanceStep.Two:
+                obstAvoidanceStep = ObstAvoidanceStep.Three;
                 StartGoingToPoint(transform.position + (ArduinoController.MinObjectDist * -1f * transform.right), false);
                 return;
 
-            case 2:
-                obstAvoidanceStep = 3;
+            case ObstAvoidanceStep.Three:
+                obstAvoidanceStep = ObstAvoidanceStep.Four;
                 curObstacle.GetComponent<WallBuilder>().SwitchWallSides();
                 StartGoingToPoint(transform.position + (1000f * transform.forward), false);
                 return;
 
-            case 4:
-                obstAvoidanceStep = -1;
+            case ObstAvoidanceStep.Four:
+                obstAvoidanceStep = ObstAvoidanceStep.Five;
+                MoveAwayFromObstacle();
+                break;
+
+            case ObstAvoidanceStep.Five:
+                obstAvoidanceStep = ObstAvoidanceStep.None;
                 isMovingAroundObstacle = false;
                 curObstacle.GetComponent<WallBuilder>().enabled = false;
                 curObstacle = null;
                 StartGoingToPoint(inputtedPos, false);
                 return;
+        }
+
+        void MoveAwayFromObstacle()
+        {
+            StartGoingToPoint(transform.position + ((ArduinoController.MinObjectDist + ultrasonicOffsetFromCenter) * transform.forward), false);
         }
     }
 
@@ -252,13 +277,7 @@ public class CarController : MonoBehaviour
     {
         obstacleStart.position = transform.position
             + (ultrasonicOffsetFromCenter * transform.forward)
-            + ((ArduinoController.MinObjectDist + (obstAvoidanceStep == 3 ? (curObstacle.transform.localScale.x * 0.5f) : 0)) * -1f * transform.right);
-    }
-
-    private void MoveAwayFromObstacle()
-    {
-        StartGoingToPoint(transform.position + ((ArduinoController.MinObjectDist + ultrasonicOffsetFromCenter) * transform.forward), false);
-        ++obstAvoidanceStep;
+            + ((ArduinoController.MinObjectDist + (obstAvoidanceStep == ObstAvoidanceStep.Four ? (curObstacle.transform.localScale.x * 0.5f) : 0)) * -1f * transform.right);
     }
 
     private void RecordPerimeter(float curYRot)
