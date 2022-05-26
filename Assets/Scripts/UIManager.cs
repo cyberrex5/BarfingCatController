@@ -15,6 +15,16 @@ public class UIManager : MonoBehaviour
     [Header("Make sure to set the callbacks for the movement buttons\nin their event trigger components in the inspector.")]
     [Space]
 
+    [SerializeField] private GameObject calibrationPanel;
+    [Space]
+    [SerializeField] private Slider maxSpeedSlider;
+    [SerializeField] private TMP_InputField maxSpeedSliderInput;
+    [Space]
+    [SerializeField] private Slider maxRotSpeedSlider;
+    [SerializeField] private TMP_InputField maxRotSpeedSliderInput;
+
+    [Space]
+
     [SerializeField] private GameObject settingsPanel;
     [Space]
     [SerializeField] private Slider speedSlider;
@@ -33,7 +43,16 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private CarController carScript;
 
-    private bool hasAppliedChanges { get => curNormalSpeed == ArduinoController.NormalSpeed && curMinObjDist == (byte)(ArduinoController.MinObjectDist * 10f); }
+    private bool hasAppliedChanges
+    {
+        get => curNormalSpeed == ArduinoController.NormalSpeed
+            && curMinObjDist == (byte)(ArduinoController.MinObjectDist * 10f)
+            && curMaxSpeed == carScript.MaxSpeed
+            && curMaxRotSpeed == carScript.MaxRotationSpeed;
+    }
+
+    private float curMaxSpeed;
+    private float curMaxRotSpeed;
 
     private byte curNormalSpeed;
     private byte curMinObjDist;
@@ -84,6 +103,14 @@ public class UIManager : MonoBehaviour
         curMinObjDist = (byte)(ArduinoController.MinObjectDist * 10f);
         minObjDistSlider.value = curMinObjDist;
         minObjDistSliderInput.text = curMinObjDist.ToString();
+
+        curMaxSpeed = carScript.MaxSpeed;
+        maxSpeedSlider.value = curMaxSpeed;
+        maxSpeedSliderInput.text = curMaxSpeed.ToString();
+
+        curMaxRotSpeed = carScript.MaxRotationSpeed;
+        maxRotSpeedSlider.value = curMaxRotSpeed;
+        maxRotSpeedSliderInput.text = curMaxRotSpeed.ToString();
     }
 
     private void OnRecordClick()
@@ -119,6 +146,10 @@ public class UIManager : MonoBehaviour
     public void OpenSettingsPanel() => settingsPanel.SetActive(true);
 
     //public void CloseSettingsPanel() => settingsPanel.SetActive(false);
+
+    public void OpenCalibrationPanel() => calibrationPanel.SetActive(true);
+
+    public void CloseCalibrationPanel() => calibrationPanel.SetActive(false);
 
     public void OnCloseSettingsClick()
     {
@@ -193,9 +224,65 @@ public class UIManager : MonoBehaviour
         minObjDistSlider.value = newVal;
     }
 
+    #region CalibrationPanel
+
+    public void OnMaxSpeedSliderChange()
+    {
+        curMaxSpeed = maxSpeedSlider.value;
+        maxSpeedSliderInput.text = curMaxSpeed.ToString();
+    }
+
+    public void OnMaxSpeedSliderTextChange()
+    {
+        float newVal;
+        if (!float.TryParse(maxSpeedSliderInput.text, out newVal))
+        {
+            return;
+        }
+
+        float clampedVal = Mathf.Clamp(newVal, 0f, 5f);
+        if (newVal != clampedVal)
+        {
+            maxSpeedSliderInput.text = clampedVal.ToString();
+            newVal = clampedVal;
+        }
+
+        curMaxSpeed = newVal;
+        maxSpeedSlider.value = newVal;
+    }
+
+    public void OnMaxRotSpeedSliderChange()
+    {
+        curMaxRotSpeed = maxRotSpeedSlider.value;
+        maxRotSpeedSliderInput.text = curMaxRotSpeed.ToString();
+    }
+
+    public void OnMaxRotSpeedSliderTextChange()
+    {
+        float newVal;
+        if (!float.TryParse(maxRotSpeedSliderInput.text, out newVal))
+        {
+            return;
+        }
+
+        float clampedVal = Mathf.Clamp(newVal, 0f, 720f);
+        if (newVal != clampedVal)
+        {
+            maxRotSpeedSliderInput.text = clampedVal.ToString();
+            newVal = clampedVal;
+        }
+
+        curMaxRotSpeed = newVal;
+        maxRotSpeedSlider.value = newVal;
+    }
+
+    #endregion
+
     public void OnApplySettingsClick()
     {
         if (curNormalSpeed != ArduinoController.NormalSpeed) ArduinoController.SetNormalSpeed(curNormalSpeed);
         if (curMinObjDist != (byte)(ArduinoController.MinObjectDist * 10f)) ArduinoController.SetMinObjectDist(curMinObjDist);
+        carScript.MaxSpeed = curMaxSpeed;
+        carScript.MaxRotationSpeed = curMaxRotSpeed;
     }
 }
