@@ -44,7 +44,7 @@ public class ArduinoController : UnityEngine.MonoBehaviour
 
     private void Update()
     {
-        string btMsg = BluetoothService.ReadFromBluetooth();
+        string btMsg = BluetoothService.Instance.ReadFromBluetooth();
         if (btMsg.Length == 1)
         {
             ConditionalLog("Recieved bluetooth message");
@@ -56,7 +56,7 @@ public class ArduinoController : UnityEngine.MonoBehaviour
     {
         if (IsConnected) return;
 
-        IsConnected = BluetoothService.StartBluetoothConnection(BTAdapterName);
+        IsConnected = BluetoothService.Instance.StartBluetoothConnection(BTAdapterName);
 
         if (!IsConnected)
         {
@@ -65,6 +65,7 @@ public class ArduinoController : UnityEngine.MonoBehaviour
         else
         {
             UnityEngine.GameObject.FindWithTag(BTObjTag).GetComponent<ArduinoController>().enabled = true;
+            DontDestroyOnLoad(UnityEngine.GameObject.FindWithTag(BTObjTag));
         }
     }
 
@@ -72,7 +73,7 @@ public class ArduinoController : UnityEngine.MonoBehaviour
     {
         if (IsConnected)
         {
-            BluetoothService.WritetoBluetooth(((char)msg).ToString());
+            BluetoothService.Instance.WritetoBluetooth(((char)msg).ToString());
         }
     }
 
@@ -80,7 +81,7 @@ public class ArduinoController : UnityEngine.MonoBehaviour
     {
         if (IsConnected)
         {
-            BluetoothService.WritetoBluetooth(msg);
+            BluetoothService.Instance.WritetoBluetooth(msg);
         }
     }
 

@@ -80,7 +80,6 @@ public class UIManager : MonoBehaviour
             GameObject.FindWithTag("ConnectButton").GetComponent<Button>().interactable = false;
             GameObject.FindWithTag("SandboxButton").GetComponent<Button>().interactable = false;
 
-            AndroidBluetooth.BluetoothService.CreateBluetoothObject();
             ArduinoController.Connect();
 
             GameObject.FindWithTag("ConnectingPanel").SetActive(false);
