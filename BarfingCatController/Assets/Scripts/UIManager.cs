@@ -22,6 +22,9 @@ public class UIManager : MonoBehaviour
     [Space]
     [SerializeField] private Slider maxRotSpeedSlider;
     [SerializeField] private TMP_InputField maxRotSpeedSliderInput;
+    [Space]
+    [SerializeField] private Slider timeToMaxSlider;
+    [SerializeField] private TMP_InputField timeToMaxSliderInput;
 
     [Space]
 
@@ -48,11 +51,13 @@ public class UIManager : MonoBehaviour
         get => curNormalSpeed == ArduinoController.NormalSpeed
             && curMinObjDist == (byte)(ArduinoController.MinObjectDist * 10f)
             && curMaxSpeed == carScript.MaxSpeed
-            && curMaxRotSpeed == carScript.MaxRotationSpeed;
+            && curMaxRotSpeed == carScript.MaxRotationSpeed
+            && curTimeToMax == carScript.WheelTimeToMax;
     }
 
     private float curMaxSpeed;
     private float curMaxRotSpeed;
+    private float curTimeToMax;
 
     private byte curNormalSpeed;
     private byte curMinObjDist;
@@ -110,6 +115,10 @@ public class UIManager : MonoBehaviour
         curMaxRotSpeed = carScript.MaxRotationSpeed;
         maxRotSpeedSlider.value = curMaxRotSpeed;
         maxRotSpeedSliderInput.text = curMaxRotSpeed.ToString();
+
+        curTimeToMax = carScript.WheelTimeToMax;
+        timeToMaxSlider.value = curTimeToMax;
+        timeToMaxSliderInput.text = curTimeToMax.ToString();
     }
 
     private void OnRecordClick()
@@ -264,7 +273,7 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        float clampedVal = Mathf.Clamp(newVal, 0f, 720f);
+        float clampedVal = Mathf.Clamp(newVal, 0f, 360f);
         if (newVal != clampedVal)
         {
             maxRotSpeedSliderInput.text = clampedVal.ToString();
@@ -275,6 +284,31 @@ public class UIManager : MonoBehaviour
         maxRotSpeedSlider.value = newVal;
     }
 
+    public void OnTimeToMaxSliderChange()
+    {
+        curTimeToMax = timeToMaxSlider.value;
+        timeToMaxSliderInput.text = curTimeToMax.ToString();
+    }
+
+    public void OnTimeToMaxSliderTextChange()
+    {
+        float newVal;
+        if (!float.TryParse(timeToMaxSliderInput.text, out newVal))
+        {
+            return;
+        }
+
+        float clampedVal = Mathf.Clamp(newVal, 0f, 1f);
+        if (newVal != clampedVal)
+        {
+            timeToMaxSliderInput.text = clampedVal.ToString();
+            newVal = clampedVal;
+        }
+
+        curTimeToMax = newVal;
+        timeToMaxSlider.value = newVal;
+    }
+
     #endregion
 
     public void OnApplySettingsClick()
@@ -283,5 +317,6 @@ public class UIManager : MonoBehaviour
         if (curMinObjDist != (byte)(ArduinoController.MinObjectDist * 10f)) ArduinoController.SetMinObjectDist(curMinObjDist);
         carScript.MaxSpeed = curMaxSpeed;
         carScript.MaxRotationSpeed = curMaxRotSpeed;
+        carScript.WheelTimeToMax = curTimeToMax;
     }
 }
