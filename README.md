@@ -1,6 +1,7 @@
 ![alt text](https://github.com/cyberrex5/BarfingCatController/blob/main/icon-256.png)
 # BarfingCatController
-Android app that controls BarfingCat
+Android app that controls BarfingCat.\
+Disclamer: Not my finest work.
 
 ![alt text](https://github.com/cyberrex5/BarfingCatController/blob/main/screenshot.jpg)
 
