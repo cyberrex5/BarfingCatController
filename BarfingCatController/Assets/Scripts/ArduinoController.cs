@@ -52,6 +52,11 @@ public class ArduinoController : UnityEngine.MonoBehaviour
         }
     }
 
+    private void OnApplicationQuit()
+    {
+        BluetoothService.Instance.StopBluetoothConnection();
+    }
+
     public static void Connect()
     {
         if (IsConnected) return;
@@ -65,7 +70,7 @@ public class ArduinoController : UnityEngine.MonoBehaviour
         else
         {
             UnityEngine.GameObject.FindWithTag(BTObjTag).GetComponent<ArduinoController>().enabled = true;
-            DontDestroyOnLoad(UnityEngine.GameObject.FindWithTag(BTObjTag));
+            //DontDestroyOnLoad(UnityEngine.GameObject.FindWithTag(BTObjTag));
         }
     }
 

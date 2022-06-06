@@ -2662,8 +2662,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MaxSpeed: 0.4167
-  MaxRotationSpeed: 185
-  WheelTimeToMax: 0.25
+  MaxRotationSpeed: 180
+  WheelTimeToMax: 0.14
   inputTargetObj: {fileID: 2116056835}
   targetObj: {fileID: 2127006864}
   perimeter: {fileID: 2128190706}

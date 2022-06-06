@@ -73,12 +73,12 @@ public class UIManager : MonoBehaviour
         GameObject.FindWithTag("RecordButton").GetComponent<Button>().onClick.AddListener(OnRecordClick);
         GameObject.FindWithTag("ResetButton").GetComponent<Button>().onClick.AddListener(OnResetClick);
 
-        if (ArduinoController.IsConnected)
-        {
-            GameObject.FindWithTag("ConnectingPanel").SetActive(false);
-            GameObject.FindWithTag(ArduinoController.BTObjTag).GetComponent<ArduinoController>().enabled = true;
-            return;
-        }
+        //if (ArduinoController.IsConnected)
+        //{
+        //    GameObject.FindWithTag("ConnectingPanel").SetActive(false);
+        //    GameObject.FindWithTag(ArduinoController.BTObjTag).GetComponent<ArduinoController>().enabled = true;
+        //    return;
+        //}
 
         GameObject.FindWithTag("ConnectButton").GetComponent<Button>().onClick.AddListener(() =>
         {
@@ -140,6 +140,7 @@ public class UIManager : MonoBehaviour
 
     private void OnResetClick()
     {
+        AndroidBluetooth.BluetoothService.Instance.StopBluetoothConnection();
         UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex, UnityEngine.SceneManagement.LoadSceneMode.Single);
     }
 
@@ -182,132 +183,27 @@ public class UIManager : MonoBehaviour
         closeWarningPanel.SetActive(false);
     }
 
-    public void OnSpeedSliderChange()
-    {
-        curNormalSpeed = (byte)speedSlider.value;
-        speedSliderInput.text = curNormalSpeed.ToString();
-    }
+    public void OnSpeedSliderChange() => UpdateSliderInputField(speedSlider, speedSliderInput, ref curNormalSpeed);
 
-    public void OnSpeedSliderTextChange()
-    {
-        byte newVal;
-        if (!byte.TryParse(speedSliderInput.text, out newVal))
-        {
-            return;
-        }
+    public void OnSpeedSliderTextChange() => UpdateSliderUI(speedSlider, speedSliderInput, ref curNormalSpeed);
 
-        int clampedVal = Mathf.Clamp(newVal, 0, 255);
-        if (newVal != clampedVal)
-        {
-            speedSliderInput.text = clampedVal.ToString();
-            newVal = (byte)clampedVal;
-        }
+    public void OnObjDistSliderChange() => UpdateSliderInputField(minObjDistSlider, minObjDistSliderInput, ref curMinObjDist);
 
-        curNormalSpeed = newVal;
-        speedSlider.value = newVal;
-    }
+    public void OnObjDistSliderTextChange() => UpdateSliderUI(minObjDistSlider, minObjDistSliderInput, ref curMinObjDist);
 
-    public void OnObjDistSliderChange()
-    {
-        curMinObjDist = (byte)minObjDistSlider.value;
-        minObjDistSliderInput.text = curMinObjDist.ToString();
-    }
+    #region Calibration Panel
 
-    public void OnObjDistSliderTextChange()
-    {
-        byte newVal;
-        if (!byte.TryParse(minObjDistSliderInput.text, out newVal))
-        {
-            return;
-        }
+    public void OnMaxSpeedSliderChange() => UpdateSliderInputField(maxSpeedSlider, maxSpeedSliderInput, ref curMaxSpeed);
 
-        int clampedVal = Mathf.Clamp(newVal, 0, 255);
-        if (newVal != clampedVal)
-        {
-            minObjDistSliderInput.text = clampedVal.ToString();
-            newVal = (byte)clampedVal;
-        }
+    public void OnMaxSpeedSliderTextChange() => UpdateSliderUI(maxSpeedSlider, maxSpeedSliderInput, ref curMaxSpeed);
 
-        curMinObjDist = newVal;
-        minObjDistSlider.value = newVal;
-    }
+    public void OnMaxRotSpeedSliderChange() => UpdateSliderInputField(maxRotSpeedSlider, maxRotSpeedSliderInput, ref curMaxRotSpeed);
 
-    #region CalibrationPanel
+    public void OnMaxRotSpeedSliderTextChange() => UpdateSliderUI(maxRotSpeedSlider, maxRotSpeedSliderInput, ref curMaxRotSpeed);
 
-    public void OnMaxSpeedSliderChange()
-    {
-        curMaxSpeed = maxSpeedSlider.value;
-        maxSpeedSliderInput.text = curMaxSpeed.ToString();
-    }
+    public void OnTimeToMaxSliderChange() => UpdateSliderInputField(timeToMaxSlider, timeToMaxSliderInput, ref curTimeToMax);
 
-    public void OnMaxSpeedSliderTextChange()
-    {
-        float newVal;
-        if (!float.TryParse(maxSpeedSliderInput.text, out newVal))
-        {
-            return;
-        }
-
-        float clampedVal = Mathf.Clamp(newVal, 0f, 5f);
-        if (newVal != clampedVal)
-        {
-            maxSpeedSliderInput.text = clampedVal.ToString();
-            newVal = clampedVal;
-        }
-
-        curMaxSpeed = newVal;
-        maxSpeedSlider.value = newVal;
-    }
-
-    public void OnMaxRotSpeedSliderChange()
-    {
-        curMaxRotSpeed = maxRotSpeedSlider.value;
-        maxRotSpeedSliderInput.text = curMaxRotSpeed.ToString();
-    }
-
-    public void OnMaxRotSpeedSliderTextChange()
-    {
-        float newVal;
-        if (!float.TryParse(maxRotSpeedSliderInput.text, out newVal))
-        {
-            return;
-        }
-
-        float clampedVal = Mathf.Clamp(newVal, 0f, 360f);
-        if (newVal != clampedVal)
-        {
-            maxRotSpeedSliderInput.text = clampedVal.ToString();
-            newVal = clampedVal;
-        }
-
-        curMaxRotSpeed = newVal;
-        maxRotSpeedSlider.value = newVal;
-    }
-
-    public void OnTimeToMaxSliderChange()
-    {
-        curTimeToMax = timeToMaxSlider.value;
-        timeToMaxSliderInput.text = curTimeToMax.ToString();
-    }
-
-    public void OnTimeToMaxSliderTextChange()
-    {
-        float newVal;
-        if (!float.TryParse(timeToMaxSliderInput.text, out newVal))
-        {
-            return;
-        }
-
-        float clampedVal = Mathf.Clamp(newVal, 0f, 1f);
-        if (newVal != clampedVal)
-        {
-            timeToMaxSliderInput.text = clampedVal.ToString();
-            newVal = clampedVal;
-        }
-
-        curTimeToMax = newVal;
-        timeToMaxSlider.value = newVal;
-    }
+    public void OnTimeToMaxSliderTextChange() => UpdateSliderUI(timeToMaxSlider, timeToMaxSliderInput, ref curTimeToMax);
 
     #endregion
 
@@ -318,5 +214,53 @@ public class UIManager : MonoBehaviour
         carScript.MaxSpeed = curMaxSpeed;
         carScript.MaxRotationSpeed = curMaxRotSpeed;
         carScript.WheelTimeToMax = curTimeToMax;
+    }
+
+    private void UpdateSliderInputField(Slider slider, TMP_InputField sliderInput, ref byte field)
+    {
+        field = (byte)slider.value;
+        sliderInput.text = field.ToString();
+    }
+
+    private void UpdateSliderInputField(Slider slider, TMP_InputField sliderInput, ref float field)
+    {
+        field = slider.value;
+        sliderInput.text = field.ToString();
+    }
+
+    private void UpdateSliderUI(Slider slider, TMP_InputField sliderInput, ref byte field)
+    {
+        if (!byte.TryParse(sliderInput.text, out byte newVal))
+        {
+            return;
+        }
+
+        byte clampedVal = (byte)Mathf.Clamp(newVal, byte.MinValue, byte.MaxValue);
+        if (newVal != clampedVal)
+        {
+            sliderInput.text = clampedVal.ToString();
+            newVal = clampedVal;
+        }
+
+        field = newVal;
+        slider.value = newVal;
+    }
+
+    private void UpdateSliderUI(Slider slider, TMP_InputField sliderInput, ref float field)
+    {
+        if (!float.TryParse(sliderInput.text, out float newVal))
+        {
+            return;
+        }
+
+        float clampedVal = Mathf.Clamp(newVal, slider.minValue, slider.maxValue);
+        if (newVal != clampedVal)
+        {
+            sliderInput.text = clampedVal.ToString();
+            newVal = clampedVal;
+        }
+
+        field = newVal;
+        slider.value = newVal;
     }
 }
