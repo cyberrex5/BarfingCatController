@@ -123,8 +123,8 @@ public class BluetoothConnector
         }
     }
 
-    public void PrintOnScreen(Context context, String info){
+    public void PrintOnScreen(Context context, String info)
+    {
         Toast.makeText(context, info,Toast.LENGTH_SHORT);
     }
 }
-
